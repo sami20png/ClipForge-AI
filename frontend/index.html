@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClipForge AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f5f7ff;font:16px system-ui}
+main{max-width:760px;margin:auto;padding:28px 18px}
+.card{background:#151d33;border:1px solid #293653;border-radius:18px;padding:20px;margin:16px 0}
+h1{font-size:32px;margin:0}
+p{color:#b9c5dc;line-height:1.5}
+input,button{font:inherit;border-radius:10px;padding:12px}
+input{width:100%;margin:12px 0;background:#0d1426;color:white;border:1px solid #415274}
+button{background:#7c5cff;color:white;border:0;font-weight:700;width:100%}
+video{width:100%;border-radius:12px;margin-top:12px}
+.small{font-size:13px;color:#9cabc7}
+</style>
+</head>
+<body>
+<main>
+<h1>ClipForge AI ✂️</h1>
+<p>Turn your video into short vertical clips.</p>
+
+<section class="card">
+<label>Backend API URL</label>
+<input id="api" placeholder="Enter backend URL">
+
+<label>Select video file</label>
+<input id="file" type="file" accept="video/*">
+
+<button id="go">Generate Clips</button>
+<p id="status" class="small">Upload a video to begin.</p>
+</section>
+
+<section id="results"></section>
+<p class="small">YouTube URL and Live clipping are not active yet.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+
+$("go").onclick=async()=>{
+ const f=$("file").files[0];
+ if(!f){$("status").textContent="Please choose a video.";return}
+
+ const api=$("api").value.replace(/\/$/,"");
+ if(!api){$("status").textContent="Enter backend URL first.";return}
+
+ const fd=new FormData();
+ fd.append("video",f);
+ $("go").disabled=true;
+ $("status").textContent="Processing video...";
+
+ try{
+  const r=await fetch(api+"/api/jobs/upload",{method:"POST",body:fd});
+  const data=await r.json();
+  if(!r.ok)throw new Error(data.detail||"Processing failed");
+
+  $("results").innerHTML="";
+  data.clips.forEach(c=>{
+   const d=document.createElement("div");
+   d.className="card";
+   d.innerHTML=`<h3>${c.title}</h3>
+   <p>${c.description}</p>
+   <p>${c.hashtags.join(" ")}</p>
+   <video controls src="${api+c.url}"></video>
+   <a style="color:#b7a8ff" href="${api+c.url}" download>Download clip</a>`;
+   $("results").appendChild(d);
+  });
+  $("status").textContent="Clips created successfully!";
+ }catch(e){
+  $("status").textContent="Error: "+e.message;
+ }finally{
+  $("go").disabled=false;
+ }
+};
+</script>
+</body>
+</html>
